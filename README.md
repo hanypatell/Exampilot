@@ -1,36 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ✈️ ExamPilot — your AI exam co-pilot
 
-## Getting Started
+Plan smarter. Get unstuck faster. Walk into exams ready.
 
-First, run the development server:
+ExamPilot is a full-stack web app for students:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+| Feature | What it does |
+|---|---|
+| **Syllabus → Study plan** | Upload a syllabus (and past papers). AI extracts topics, ranks them by exam importance (1–5★) and builds a day-by-day plan until the exam. |
+| **DoubtSnap** | Photo of any question → step-by-step solution, key concept, common mistake and 3 similar practice questions. |
+| **Chat with notes** | Ask questions about your uploaded PDFs. Answers cite the document and page number. |
+| **Quizzes & flashcards** | One click creates 5 exam-style MCQs + 6 flashcards for any topic. |
+| **Adaptive plan** | Doubts and low quiz scores lower a topic's mastery → the plan gives it more time. Missed days get re-planned. |
+| **Dashboard** | Readiness score per subject, weak topics, today's sessions, study streak. |
+
+## Tech stack
+
+- **Next.js 16** (React, TypeScript) — frontend + backend API routes in one project
+- **Tailwind CSS** — styling
+- **Supabase** — PostgreSQL database, login (auth) and row-level security
+- **Claude API** (or Gemini) — vision, structured JSON outputs
+- **Vercel** — hosting
+
+```
+Browser (Next.js pages)
+      │
+Next.js API routes / Server Actions ──► AI (Claude or Gemini)
+      │
+Supabase (Postgres · Auth · full-text search)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### How the smart parts work
+- **Planner** (`src/lib/planner.ts`): each topic gets a priority = importance × (1 + (100 − mastery)/50) + 2 × doubts. Days are split into 45-min slots: first a *learn* session for every topic, then *practice/revise* sessions by priority (halving a topic's priority each time it's picked), and a mock-test day before the exam.
+- **Readiness** = mastery averaged over topics, weighted by importance.
+- **Chat with notes** is retrieval-augmented generation (RAG): PDFs are split into pages, stored in Postgres with a full-text index, the best-matching pages are retrieved and given to the AI, which must cite them.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Run it locally
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Install [Node.js](https://nodejs.org) 20+.
+2. Create a free project at [supabase.com](https://supabase.com).
+   - **SQL Editor** → paste all of `supabase/schema.sql` → **Run**.
+   - **Authentication → Sign In / Providers → Email** → turn **off** "Confirm email" (easier for demos).
+3. Copy `.env.example` to `.env.local` and fill in:
+   - `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (Supabase → Project Settings → API Keys)
+   - `ANTHROPIC_API_KEY` from [console.anthropic.com](https://console.anthropic.com) **or** `GEMINI_API_KEY` from [aistudio.google.com](https://aistudio.google.com) with `AI_PROVIDER=gemini`
+4. Run:
+   ```bash
+   npm install
+   npm run dev
+   ```
+   Open http://localhost:3000
 
-## Learn More
+## Deploy (Vercel)
 
-To learn more about Next.js, take a look at the following resources:
+1. Push this folder to a GitHub repository.
+2. On [vercel.com](https://vercel.com) → **Add New Project** → import the repo.
+3. Add the same environment variables from `.env.local`.
+4. Click **Deploy** — you get a live link like `exampilot.vercel.app`.
+5. In Supabase → **Authentication → URL Configuration**, set the Site URL to your Vercel link.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/
+  app/
+    page.tsx               landing page
+    login/                 login & sign-up
+    (app)/dashboard/       dashboard
+    (app)/subjects/        add subject, subject page, chat
+    (app)/doubt/           DoubtSnap upload
+    (app)/doubts/[id]/     solution page
+    (app)/practice/        quiz + flashcards
+    api/                   backend: subjects, notes, chat, doubt, quiz
+    actions.ts             server actions (login, tick task, save quiz…)
+  lib/
+    ai.ts                  talks to Claude / Gemini
+    features.ts            AI prompts + output schemas
+    planner.ts             study-plan algorithm
+    data.ts                database helpers, PDF reading
+  proxy.ts                 protects logged-in pages
+supabase/schema.sql        database tables + security rules
+```
