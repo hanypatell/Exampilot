@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 
 // Supabase client for Server Components, Server Actions and Route Handlers.
 export async function createClient() {
@@ -29,6 +30,8 @@ export async function createClient() {
 
 // Returns the Supabase client plus the logged-in user, or sends them to /login.
 export async function requireUser() {
+  // The login check reads the current time, so it must run per request, not during prerendering.
+  await connection();
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
   if (!data.user) redirect("/login");

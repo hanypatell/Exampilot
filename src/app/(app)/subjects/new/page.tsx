@@ -11,7 +11,6 @@ export default function NewSubjectPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [error, setError] = useState("");
   const [step, setStep] = useState(-1);
-  const [minDate] = useState(() => new Date(Date.now() + 86_400_000).toISOString().slice(0, 10));
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -50,7 +49,10 @@ export default function NewSubjectPage() {
           </div>
           <div className="sm:col-span-2">
             <label className="label" htmlFor="examDate">Exam date</label>
-            <input id="examDate" name="examDate" type="date" required min={minDate} className="input" />
+            <input id="examDate" name="examDate" type="date" required className="input"
+              // Earliest pick is tomorrow. Set on focus (not during render) so the page can be prerendered.
+              onFocus={(e) => (e.currentTarget.min = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10))}
+            />
           </div>
           <div>
             <label className="label" htmlFor="hoursPerDay">Hours / day</label>

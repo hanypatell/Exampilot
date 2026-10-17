@@ -6,7 +6,7 @@ import { Logo } from "@/components/Logo";
 import { requireUser } from "@/lib/supabase/server";
 
 // Shell for every logged-in page: top navigation + page content.
-// Parts that need the logged-in user load inside <Suspense>, so the shell appears instantly.
+// Parts that need the logged-in user load inside <Suspense> (each page has a loading.tsx), so the shell appears instantly.
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex flex-1 flex-col">
@@ -40,7 +40,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
         </div>
       </header>
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
-        <Suspense fallback={<PageSkeleton />}>{children}</Suspense>
+        {children}
       </main>
     </div>
   );
@@ -58,18 +58,4 @@ async function SubjectLinks() {
       {s.name}
     </Link>
   ));
-}
-
-function PageSkeleton() {
-  return (
-    <div className="animate-pulse space-y-6">
-      <div className="h-8 w-64 rounded-lg bg-slate-200" />
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-28 rounded-2xl bg-slate-200" />
-        ))}
-      </div>
-      <div className="h-64 rounded-2xl bg-slate-200" />
-    </div>
-  );
 }
